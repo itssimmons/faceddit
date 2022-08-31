@@ -1,5 +1,9 @@
 import { NotFound } from 'http-errors'
 
-export default (req: any, res: any, next: any) => {
-  next(new NotFound("Oops, the route you just access doesn't exists ;("))
+export default (request: any, response: any, next: any) => {
+  response.status(404).json({
+    success: false,
+    ...new NotFound("Oops, the route you just access doesn't exists ;(")
+  })
+  next()
 }

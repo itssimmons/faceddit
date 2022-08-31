@@ -1,49 +1,61 @@
-import prisma from '@prisma'
 import { make } from 'simple-body-validator'
-import { hashSync, compareSync } from 'bcryptjs'
 import { BadRequest, NotFound, Unauthorized } from 'http-errors'
-import jwt from '@/app/Http/Middlewares/jwt'
+import { hash, compare } from 'bcryptjs'
+import prisma from '@prisma'
+import jwt from '@/app/Helpers/jwt'
 import type { RequestHandler } from 'express'
+import { exclude } from '@/app/Helpers/exclude'
 
-const all: RequestHandler = async (request, response) => {
-  const users = await prisma.user.findMany({})
+const login: RequestHandler = async (request, response, next) => {
+  const body = request.body
 
-  response.status(200).json({
-    success: true,
-    data: users
+  const validator = make(body, {
+    email: 'required|email',
+    password: 'required|string'
   })
-}
 
-const login: RequestHandler = async (request, response) => {
-  const { email, password } = request.body
-
-  const user = await prisma.user.findUnique({ where: { email }});
-
-  if (!user) {
-      throw new NotFound('User not registered')
+  if (!validator.validate()) {
+    response.status(400).json({
+      success: false,
+      message: validator.errors().all()
+    })
+    return
   }
 
-  const checkPassword = compareSync(password, user.password as string)
+  const { email, password } = body
+  const user = await prisma.user.findUnique({ where: { email } })
+
+  if (!user) {
+    response.status(404).json({
+      success: false,
+      message: 'User not found'
+    })
+    return
+  }
+
+  const checkPassword = await compare(password, user.password as string)
 
   if (!checkPassword) {
     response.status(401).json({
       success: false,
-      message: new Unauthorized('Email address or password not valid')
+      message: 'Email address or password are not valid'
     })
+    return
   }
 
-  // @ts-ignore
-  delete user.password 
+  exclude(user, 'password')
 
-  const accessToken = await jwt.signAccessToken(user)
+  const token = await jwt.signToken(user)
+
   response.status(200).json({
     success: true,
     data: user,
-    accessToken
+    token
   })
+  next()
 }
 
-const signup: RequestHandler = async (request, response) => {
+const register: RequestHandler = async (request, response) => {
   const body = request.body
 
   const validator = make(body, {
@@ -54,10 +66,9 @@ const signup: RequestHandler = async (request, response) => {
   })
 
   if (!validator.validate()) {
-    const errors = JSON.stringify(validator.errors().all())
     response.status(400).json({
       success: false,
-      message: new BadRequest(errors)
+      message: validator.errors().all()
     })
     return
   }
@@ -65,11 +76,13 @@ const signup: RequestHandler = async (request, response) => {
   const user = await prisma.user.create({
     data: {
       ...body,
-      password: hashSync(body.password, 16)
+      password: await hash(body.password, 6)
     }
   })
 
-  body.accessToken = await jwt.signAccessToken(user);
+  body.token = await jwt.signToken(user)
+
+  exclude(user, 'password')
 
   response.status(200).json({
     success: true,
@@ -77,4 +90,4 @@ const signup: RequestHandler = async (request, response) => {
   })
 }
 
-export default { all, login, signup }
+export default { login, register }
