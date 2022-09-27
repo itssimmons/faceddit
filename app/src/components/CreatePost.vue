@@ -1,31 +1,32 @@
 <script lang="ts">
-import { ref } from 'vue';
+import { defineComponent, ref } from 'vue';
 import Photo from './Icons/Photo.vue';
 import Video from './Icons/Video.vue';
 import Gif from './Icons/Gif.vue';
-import { getGifs } from '../services/GiphyService';
+import Input from './Input.vue';
+import { getGifs } from '@/services/giphy.service';
+import type { GiphyParams } from '@/types';
 
 const selectedImages = ref<string[] | never[]>([])
 const imageInput = document.createElement('input');
 imageInput.type = 'file';
-imageInput.accept = ".jpg,.jpeg,.png";
+imageInput.accept = ".jpg,.jpeg,.png,.webp";
 
 const selectedVideo = ref<string | null>(null)
 const videoInput = document.createElement('input');
 videoInput.type = 'file';
 videoInput.accept = ".mp4,.ogg,.mov";
 
+const selectedGif = ref<string | null>(null)
 const showGiphyDD = ref(false)
-
-const handlePhotoInput = () => imageInput.click();
-const handleVideoInput = () => videoInput.click();
-const handleGifInput = () => showGiphyDD.value = !showGiphyDD.value
 
 videoInput.addEventListener('change', evt => {
   const target = evt.target as HTMLInputElement;
 
   if (target.files) {
     selectedVideo.value = URL.createObjectURL(target.files[0])
+    selectedGif.value = ""
+    selectedImages.value = []
   }
 })
 
@@ -37,50 +38,65 @@ imageInput.addEventListener('change', evt => {
       ...selectedImages.value,
       URL.createObjectURL(target.files[0])
     ]
+    selectedGif.value = ""
+    selectedVideo.value = ""
   }
 })
 
-const mediaUploadClassResolver = (video: any, images: any[], gif: any) => {
-  if (video || gif) return 'has-media'
-  else if (images.length > 0) return 'has-img'
 
-  return ''
-}
-
-
-export default {
+export default defineComponent({
   name: 'CreatePost',
   components: {
     Photo,
     Video,
-    Gif
+    Gif,
+    Input
+  },
+  mounted() {
+    this.fetchGifs()
   },
   data() {
     return {
+      gifs: ref<Record<any, any>[] | null>(null),
+      loading: true,
+      error: '',
       showGiphyDD,
       selectedImages,
       selectedVideo,
-      mediaUploadClassResolver,
-      handlePhotoInput,
-      handleVideoInput,
-      handleGifInput,
+      selectedGif
     }
-  },
-  mounted() {
-    this.gifs()
   },
   methods: {
-    gifs() {
-      getGifs().then(gifs => {
-        console.log(gifs)
-      })
+    fetchGifs(params?: GiphyParams) {
+      getGifs(params)
+        .then(gifs => this.gifs = gifs.data.data as any[])
+        .catch(err => this.error = err.message)
+        .finally(() => this.loading = false)
+    },
+    handleGiphySearch(evt: any) {
+      if (evt.code === "Enter")
+        this.fetchGifs({ q: evt.target.value })
+    },
+    mediaUploadClassResolver(video: any, images: any[], gif: any) {
+      if (video || gif) return 'has-media'
+      else if (images.length > 0) return 'has-img'
+
+      return ''
+    },
+    handlePhotoInput() { imageInput.click() },
+    handleVideoInput() { videoInput.click() },
+    handleGifInput() { showGiphyDD.value = !showGiphyDD.value },
+    handleGifSelection(gif: any) {
+      selectedGif.value = gif.images.original.url
+      selectedVideo.value = ""
+      selectedImages.value = []
     }
   }
-}
+})
 </script>
 
 <template>
-  <section class="create__post" :class="mediaUploadClassResolver(selectedVideo, selectedImages, '')">
+  <section class="create__post" :class="mediaUploadClassResolver(selectedVideo, selectedImages, selectedGif)">
     <h2>Hi, John Doe! 👋</h2>
     <section class="textarea__section">
       <textarea col="2" rows="5" maxlength="255" placeholder="Have something to share with the community today?"></textarea>
@@ -90,6 +106,7 @@ export default {
       <video v-if="selectedVideo" controls class="selected__video">
         <source :src="selectedVideo" type="video/mp4">
       </video>
+      <img v-if="selectedGif" :src="selectedGif" class="selected__video">
       <div v-if="selectedImages.length > 0" class="selected__images">
         <div class="imgs">
           <div v-for="imgs in selectedImages.slice(0,6)">
@@ -97,12 +114,7 @@ export default {
           </div>  
         </div>
         <div class="default__imgs">
-          <div></div>
-          <div></div>
-          <div></div>
-          <div></div>
-          <div></div>
-          <div></div>
+          <div v-for="index in 6" :key="index"></div>
         </div>
       </div>
     </section>
@@ -118,8 +130,12 @@ export default {
       <div class="gif">
         <Gif :handle-click="handleGifInput" />
         <p>Gif</p>
-        <div v-if="showGiphyDD" id="giphy-dd">  
-        </div>
+        <section v-if="showGiphyDD" id="giphy-dd">
+          <Input type="giphy-search" :handle-key="handleGiphySearch" />
+          <div class="gifs__section">
+            <img v-if="gifs && !loading" v-for="gif in gifs" :src="gif.images.original.url" @click="handleGifSelection(gif)"> 
+          </div>
+        </section>
       </div>
     </div>
   </section>
@@ -181,12 +197,12 @@ export default {
   align-content: center;
   justify-content: space-around;
 }
-.media__upload div {
+.media__upload > div {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
-.media__upload div p {
+.media__upload > div p {
   font-weight: 600;
   font-size: 0.75rem;
   color: #999;
@@ -240,14 +256,33 @@ export default {
 .media__upload .gif {
   position: relative;
 }
+
 #giphy-dd {
-  width: 350px;
-  height: 420px;
-  border-radius: 14px;
+  padding: 11px;
+  overflow: hidden;
+  width: 440px;
+  height: 450px;
+  border-radius: 8px;
   position: absolute;
   top: 44px;
-  background: black;
+  background: #353535;
   left: 8px;
   z-index: 9999;
+}
+.gifs__section {
+  display: grid !important;
+  grid-auto-flow: row;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  overflow-y: scroll;
+  height: 90%;
+  margin-top: 12px;
+}
+.gifs__section img {
+  width: 200px;
+  height: 120px;
+  border-radius: 6px;
+  cursor: pointer;
+  object-fit: cover;
 }
 </style>

@@ -24,7 +24,7 @@ model Post {
   userId      Int      @unique
   video       String?
   gif         String?
-  images      String[] @ignore
+  images      String[] @default([])
   upvotes     Int      @default(0)
   downvotes   Int      @default(0)
   createdAt   DateTime @default(now())

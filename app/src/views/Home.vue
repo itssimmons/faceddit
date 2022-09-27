@@ -1,8 +1,35 @@
-<script setup lang="ts">
-import Post from "../components/Post.vue";
-import Header from "../components/Header.vue";
-import CreatePost from "../components/CreatePost.vue";
-import posts from "../assets/posts.json"
+<script lang="ts">
+import Post from "@/components/Post.vue";
+import Header from "@/components/Header.vue";
+import CreatePost from "@/components/CreatePost.vue";
+import { getPosts } from "@/services/post.service"
+
+export default {
+  name: 'Home',
+  components: {
+    Post,
+    Header,
+    CreatePost,
+  },
+  data() {
+    return {
+      posts: null,
+      loading: true,
+      err: ""
+    }
+  },
+  mounted() {
+    this.fetchPosts()
+  },
+  methods: {
+    fetchPosts() {
+      getPosts()
+        .then(posts => this.posts = posts.data.data)
+        .catch(err => this.error = err.message)
+        .finally(() => this.loading = false)
+    }
+  }
+}
 </script>
 
 <template>
@@ -21,7 +48,7 @@ import posts from "../assets/posts.json"
       :comments="post.comments"
       :upvotes="post.upvotes"
       :downvotes="post.downvotes"
-      :created_at="post.created_at"
+      :createdAt="post.createdAt"
     />
   </section>
 </main>
@@ -39,5 +66,7 @@ main {
   padding-top: 80px;
   display: grid;
   justify-content: center;
+  align-items: start;
+  grid-auto-rows: max-content;
 }
 </style>

@@ -23,7 +23,17 @@ export default ({ mode }) => {
           target: "https://api.giphy.com",
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/giphy/, '') 
-        }
+        },
+        "/api": {
+          target: "http://localhost:8000/api",
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, '') 
+        },
+        "/auth": {
+          target: "http://localhost:8000/auth",
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/auth/, '') 
+        },
       }
     }
   })

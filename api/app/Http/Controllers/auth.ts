@@ -5,6 +5,8 @@ import prisma from '@prisma'
 import jwt from '@/app/Helpers/jwt'
 import type { RequestHandler } from 'express'
 import { exclude } from '@/app/Helpers/exclude'
+import { STORAGE_DIR } from '@/env'
+import storage from '@/app/Helpers/storage'
 
 const login: RequestHandler = async (request, response, next) => {
   const body = request.body
@@ -55,13 +57,13 @@ const login: RequestHandler = async (request, response, next) => {
   next()
 }
 
-const register: RequestHandler = async (request, response) => {
+const register: RequestHandler = async (request, response, next) => {
   const body = request.body
 
   const validator = make(body, {
     name: 'required|string',
     email: 'required|email',
-    password: 'required|string',
+    password: 'required|string|min:8',
     photo: 'nullable|string'
   })
 
@@ -70,7 +72,17 @@ const register: RequestHandler = async (request, response) => {
       success: false,
       message: validator.errors().all()
     })
+    next()
     return
+  }
+
+  if (request.file) {
+    body.photo = storage.resolve({ 
+      dir: `${STORAGE_DIR}/avatars`,
+      filename: request.file.filename,
+      host: request.get('host') as string,
+      protocol: request.protocol
+    })
   }
 
   const user = await prisma.user.create({
@@ -80,13 +92,13 @@ const register: RequestHandler = async (request, response) => {
     }
   })
 
-  body.token = await jwt.signToken(user)
-
   exclude(user, 'password')
+
+  body.token = await jwt.signToken(user)
 
   response.status(200).json({
     success: true,
-    data: user
+    data: body
   })
 }
 

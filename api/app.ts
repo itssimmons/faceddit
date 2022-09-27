@@ -10,6 +10,7 @@ const app = express()
 const router = express.Router()
 const authRouter = express.Router()
 
+app.use(`/${config.STORAGE_DIR}`, express.static('public'));
 app.use(morgan('dev'))
 app.use(cors())
 app.use(json())

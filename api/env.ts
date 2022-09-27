@@ -1,6 +1,8 @@
 import 'dotenv/config'
+import { join } from 'path'
 
 export const APP_PORT = process.env.APP_PORT
+export const STORAGE_DIR= process.env.STORAGE_DIR || 'public'
 
 export const SECRET_KEY = process.env.JWT_SECRET
 

@@ -9,7 +9,7 @@ import relativeTime from 'dayjs/plugin/relativeTime'
 dayjs.extend(relativeTime)
 
 const imgClassResolver = (images: string[] | null): string => {
-  if (!images || images.length === 3) return ''
+  if (!images || images.length === 0 || images.length === 3) return ''
   if (images.length === 1) return 'one'
   else if (images.length === 2) return 'two'
 
@@ -28,7 +28,7 @@ type Props = {
   description: string
   upvotes: number,
   downvotes: number,
-  created_at: number | string
+  createdAt: number | string
 }
 
 const props = defineProps<Props>();
@@ -42,10 +42,10 @@ const props = defineProps<Props>();
       <Vote dir="down" />
     </div>
     <div class="profile__wrapper">
-      <img class="post__pic" :src="user.photo" alt="Profile photo">
+      <img class="post__pic" :src="user.photo ?? '/nopic.png'" alt="Profile photo">
       <div>
         <p class="user">{{ user.name }}</p>
-        <p class="time">{{ dayjs(created_at).fromNow() }}</p>
+        <p class="time">{{ dayjs(createdAt).fromNow() }}</p>
       </div>
     </div>
     <p>{{ description }}</p>

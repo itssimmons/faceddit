@@ -1,6 +1,6 @@
 <script setup lang="ts">
 type Props = {
-  label: String
+  label?: string
 }
 
 const props = defineProps<Props>()
@@ -8,7 +8,7 @@ const props = defineProps<Props>()
 
 <template>
 <div class="container__separator">
-  <p>{{ label }}</p>
+  <p v-if="label">{{ label }}</p>
   <span class="line__separator"></span>
 </div>
 </template>

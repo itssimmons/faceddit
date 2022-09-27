@@ -1,15 +1,28 @@
-<script setup lang="ts">
-import Checkbox from '../components/Checkbox.vue';
-import Input from '../components/Input.vue';
-import Separator from '../components/Separator.vue';
-import Btn from '../components/Btn.vue';
+<script lang="ts">
+import Checkbox from '@/components/Checkbox.vue';
+import Input from '@/components/Input.vue';
+import Separator from '@/components/Separator.vue';
+import Btn from '@/components/Btn.vue';
+import { login } from '@/services/auth.service'
+import router from '@/router';
 
-const handleSubmit = (evt: any) => {
-  evt.preventDefault()
+export default {
+  name: 'Login',
+  components: {
+    Checkbox,
+    Input,
+    Separator,
+    Btn 
+  },
+  methods: {
+    async handleLogin(evt: any) {
+      const data = Object.fromEntries(
+        new FormData(evt.target) as any
+      )
 
-  const data = Object.fromEntries(
-    new FormData(evt.target) as any
-  )
+      login(data)
+    }
+  }
 }
 </script>
 
@@ -32,16 +45,16 @@ const handleSubmit = (evt: any) => {
       <p class="login__subtitle">Lorem ipsum dolor sit amet consectetur adipisicing elit.</p>
       <Btn type="google" />
       <Separator label="or Sign in with Email" />
-      <form id="login-form" @submit="handleSubmit">
-        <Input type="text" name="email" placeholder="Email or username" />
+      <form id="login-form" @submit.prevent="handleLogin">
+        <Input type="text" name="email" label="Email*" placeholder="Email or username" />
         <Input type="pwd" name="password" placeholder="Min. 8 characters" />
         <div class="wrapper__down">
           <Checkbox name="remember" label="Remember me" />
           <a href="#">Forget password?</a>
         </div>
-        <Btn type="submit" />
+        <Btn label="Login" type="submit" />
       </form>
-      <p class="noregistered">Not registered yet? <a href="#">Create an account</a></p>
+      <p class="noregistered">Not registered yet? <router-link to="/signup">Create an account</router-link></p>
       <p class="rr">&#xAE; Simón. All rights reserved.</p>
     </div>
   </div>

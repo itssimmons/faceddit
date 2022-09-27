@@ -1,6 +1,7 @@
 <script setup lang="ts">
 type Props = {
   type: 'google' | 'submit'
+  label?: string
 }
 
 const props = defineProps<Props>()
@@ -11,7 +12,7 @@ const props = defineProps<Props>()
   <img class="google__logo" src="../assets/google.svg">
   <label>Continue with google</label>
 </button>
-<input type="submit" value="Login" v-if="type === 'submit'">
+<input type="submit" :value="label" v-if="type === 'submit'">
 </template>
 
 <style scoped>
